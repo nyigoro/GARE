@@ -1,7 +1,8 @@
-// electron-app/main.js
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
+const dotenv = require('dotenv');
+dotenv.config();
 
 let rustProcess;
 
@@ -15,11 +16,22 @@ function createWindow() {
       nodeIntegration: false
     }
   });
+
   win.loadFile('dist/index.html');
 
   ipcMain.on('run-command', (event, data) => {
+    const mode = process.env.RUNNER_MODE || 'native';
+
+    // Start runner if not running
     if (!rustProcess) {
-      rustProcess = spawn('./rust-engine/target/debug/gare-runner');
+      if (mode === 'docker') {
+        rustProcess = spawn('docker', [
+          'exec', '-i', 'gare-app',
+          './rust-engine/target/debug/gare-runner'
+        ]);
+      } else {
+        rustProcess = spawn('./rust-engine/target/debug/gare-runner');
+      }
 
       rustProcess.stdout.on('data', (chunk) => {
         const lines = chunk.toString().split('\n').filter(Boolean);
