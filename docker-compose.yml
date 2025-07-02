@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  gare:
+    build: .
+    container_name: gare-app
+    volumes:
+      - ./scripts:/app/scripts
+      - ./engines:/app/engines
+      - ./plugins:/app/plugins
+    environment:
+      - DISPLAY=${DISPLAY}
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
+    ports:
+      - "3000:3000"  # (Optional) if GUI serves anything over HTTP
+    network_mode: host  # Needed for GUI apps to access your X server (Linux)
+    stdin_open: true
+    tty: true
+    privileged: true
