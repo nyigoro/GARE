@@ -1,0 +1,43 @@
+name: GARE CI/CD
+
+on: [push, pull_request]
+
+jobs:
+  build-linux:
+    name: Build Docker GUI (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (GUI + Puppeteer + Rust)
+        run: docker build -t gare .
+
+      - name: Smoke test Puppeteer
+        run: |
+          docker run --rm gare node -e "console.log('✅ Puppeteer:', require('puppeteer').version)"
+
+  build-windows:
+    name: Build GARE runner (Windows native)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Build Rust Runner
+        run: cargo build --release --manifest-path rust-engine/Cargo.toml
+
+      - name: Upload Windows Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: gare-windows.exe
+          path: rust-engine/target/release/gare-runner.exe
