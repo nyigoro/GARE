@@ -60,7 +60,7 @@ async fn run_engine(req: RunRequest) {
     if let Some(stdout) = child.stdout.take() {
         let reader = BufReader::new(stdout).lines();
         tokio::pin!(reader);
-        while let Some(Ok(line)) = reader.next_line().await {
+        while let Ok(Some(line)) = reader.next_line().await {
             println!("{}", line);
         }
     }
