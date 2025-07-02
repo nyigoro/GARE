@@ -1,4 +1,3 @@
-// rust-engine/Cargo.toml
 [package]
 name = "gare-runner"
 version = "0.1.0"
