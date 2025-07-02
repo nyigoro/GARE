@@ -1,0 +1,12 @@
+// rust-engine/Cargo.toml
+[package]
+name = "gare-runner"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+which = "4.4"
+tokio = { version = "1", features = ["full"] }
+async-process = "1.7"
