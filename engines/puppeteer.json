@@ -1,0 +1,6 @@
+{
+  "name": "puppeteer",
+  "type": "headless-browser",
+  "command": "node",
+  "args": ["scripts/puppeteer-example.js", "${url}"]
+}
