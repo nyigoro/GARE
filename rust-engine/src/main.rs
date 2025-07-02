@@ -1,5 +1,6 @@
 // rust-engine/src/main.rs
 use std::fs;
+use std::env;
 use std::path::Path;
 use std::process::Stdio;
 use serde::Deserialize;
@@ -18,6 +19,14 @@ struct EngineConfig {
     args: Vec<String>,
 }
 
+#[tokio::main]
+async fn main() {
+    let args: Vec<String> = env::args().collect();
+    if args.contains(&"--version".to_string()) {
+        println!("GARE Runner v0.1.0");
+        return;
+    }
+    
 #[tokio::main]
 async fn main() {
     use std::io::{BufRead, BufReader};
