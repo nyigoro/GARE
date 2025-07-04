@@ -1,0 +1,11 @@
+{
+  "name": "gare-root",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test-puppeteer": "node scripts/test-puppeteer.js"
+  },
+  "dependencies": {
+    "puppeteer": "^24.11.2"
+  }
+}
