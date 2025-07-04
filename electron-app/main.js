@@ -7,6 +7,8 @@ dotenv.config();
 
 let rustProcess;
 
+console.log('[Main] Starting Electron app'); // Debug log
+
 // Load plugins
 const pluginDir = path.join(__dirname, '../plugins');
 let plugins = [];
@@ -18,6 +20,7 @@ if (fs.existsSync(pluginDir)) {
     try {
       const plugin = require(fullPath);
       plugin?.onStart?.();
+      console.log(`[Main] Loaded plugin: ${f}`); // Debug log
       return plugin;
     } catch (err) {
       console.error(`[GARE] Failed to load plugin: ${f}`, err);
@@ -27,6 +30,7 @@ if (fs.existsSync(pluginDir)) {
 }
 
 function createWindow() {
+  console.log('[Main] Creating window'); // Debug log
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -37,9 +41,13 @@ function createWindow() {
     },
   });
 
-  win.loadFile('dist/index.html');
+  console.log('[Main] Loading dist/index.html'); // Debug log
+  win.loadFile('dist/index.html').catch(err => {
+    console.error('[Main] Failed to load index.html:', err);
+  });
 
   ipcMain.on('run-command', (event, data) => {
+    console.log('[Main] Received run-command:', data); // Debug log
     const mode = process.env.RUNNER_MODE || 'native';
 
     if (!rustProcess) {
@@ -59,6 +67,7 @@ function createWindow() {
         lines.forEach(line => {
           plugins.forEach(p => p?.onLog?.(line));
           win.webContents.send('log', line);
+          console.log('[Main] stdout:', line); // Debug log
         });
       });
 
@@ -67,12 +76,14 @@ function createWindow() {
         lines.forEach(line => {
           plugins.forEach(p => p?.onLog?.(`[ERR] ${line}`));
           win.webContents.send('log', `[ERR] ${line}`);
+          console.error('[Main] stderr:', line); // Debug log
         });
       });
 
       rustProcess.on('exit', () => {
         plugins.forEach(p => p?.onExit?.());
         win.webContents.send('log', '[GARE] Runner exited');
+        console.log('[Main] Rust process exited'); // Debug log
         rustProcess = null;
       });
     }
@@ -82,6 +93,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  console.log('[Main] App ready'); // Debug log
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -89,5 +101,6 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  console.log('[Main] All windows closed'); // Debug log
   if (process.platform !== 'darwin') app.quit();
 });
