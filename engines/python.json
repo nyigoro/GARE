@@ -1,0 +1,5 @@
+{
+  "name": "python",
+  "command": "python3",
+  "args": ["/app/scripts/sample_script.py"]
+}
