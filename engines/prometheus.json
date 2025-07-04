@@ -1,0 +1,5 @@
+{
+  "name": "prometheus",
+  "command": "curl",
+  "args": ["${url}"]
+}
