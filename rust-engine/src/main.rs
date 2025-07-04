@@ -3,6 +3,7 @@ use std::env;
 use std::io::{BufRead, BufReader, Stdin};
 use std::process::Stdio;
 use serde::Deserialize;
+use tokio::io::AsyncBufReadExt;
 use tokio::process::Command;
 use which::which;
 
