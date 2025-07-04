@@ -1,7 +1,5 @@
-// rust-engine/src/main.rs
 use std::fs;
 use std::env;
-use std::path::Path;
 use std::process::Stdio;
 use serde::Deserialize;
 use tokio::{io::{AsyncBufReadExt, BufReader}, process::Command};
@@ -26,15 +24,11 @@ async fn main() {
         println!("GARE Runner v0.1.0");
         return;
     }
-}
-    
-#[tokio::main]
-async fn main() {
-    use std::io::{BufRead, BufReader};
 
     let stdin = std::io::stdin();
-    let mut reader = BufReader::new(stdin);
+    let mut reader = std::io::BufReader::new(stdin);
     let mut input = String::new();
+
     while reader.read_line(&mut input).unwrap_or(0) > 0 {
         if let Ok(req) = serde_json::from_str::<RunRequest>(&input.trim()) {
             run_engine(req).await;
