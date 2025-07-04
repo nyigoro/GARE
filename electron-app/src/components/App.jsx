@@ -16,14 +16,25 @@ export default function App() {
         theme: { background: '#1f2937', foreground: '#f9fafb' },
       });
       xtermRef.current.open(terminalRef.current);
-      window.electronAPI.onLog((message) => {
-        xtermRef.current.writeln(message);
-      });
+      if (window.electronAPI && window.electronAPI.onLog) {
+        console.log('[App] Registering electronAPI.onLog'); // Debug log
+        window.electronAPI.onLog((message) => {
+          xtermRef.current.writeln(message);
+        });
+      } else {
+        console.error('[App] electronAPI.onLog is undefined');
+        xtermRef.current.writeln('[Error] Failed to initialize electronAPI');
+      }
     }
   }, []);
 
   const runCommand = async (data) => {
-    await window.electronAPI.runCommand(data);
+    if (window.electronAPI && window.electronAPI.runCommand) {
+      await window.electronAPI.runCommand(data);
+    } else {
+      console.error('[App] electronAPI.runCommand is undefined');
+      xtermRef.current.writeln('[Error] electronAPI not available');
+    }
   };
 
   return (
