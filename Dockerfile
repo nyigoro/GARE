@@ -1,10 +1,13 @@
-# Base image: Node.js for Electron + Puppeteer
+# ==========================
+# 🏗 Base Image with Chrome & Rust
+# ==========================
 FROM node:22-slim AS base
 
-# Avoid Puppeteer auto-downloading Chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
+ENV PATH="/root/.cargo/bin:$PATH"
 
-# Install system dependencies: Chrome, Rust, etc.
+# Install system dependencies: Puppeteer headless deps, Chrome, Rust
 RUN apt-get update && \
     apt-get install -y \
       curl wget gnupg ca-certificates build-essential \
@@ -12,7 +15,6 @@ RUN apt-get update && \
       libxdamage1 libxrandr2 libgbm1 libxshmfence1 xdg-utils unzip \
       fonts-liberation && \
     curl https://sh.rustup.rs -sSf | bash -s -- -y && \
-    export PATH="$PATH:/root/.cargo/bin" && \
     wget -q -O - https://dl.google.com/linux/linux_signing_key.pub \
       | gpg --dearmor -o /usr/share/keyrings/google.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/google.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
@@ -21,33 +23,41 @@ RUN apt-get update && \
     apt-get install -y google-chrome-stable --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
-ENV PATH="/root/.cargo/bin:$PATH"
 
-# === Electron App Build ===
-WORKDIR /app
-COPY electron-app/package.json electron-app/vite.config.js ./electron-app/
-COPY electron-app/src ./electron-app/src
-COPY electron-app/preload.js electron-app/main.js ./electron-app/
-
+# ==========================
+# 📦 Electron App Build
+# ==========================
 WORKDIR /app/electron-app
 
+# Copy only package files first (for caching)
 COPY electron-app/package*.json ./
-RUN npm install
+COPY electron-app/vite.config.js ./
 
-COPY electron-app/ .
+# Install deps and build app
+RUN npm install
+COPY electron-app/ ./
 RUN npm run build
 
-# === Build Rust Runner ===
-COPY rust-engine /app/rust-engine
+
+# ==========================
+# ⚙ Rust Runner Build
+# ==========================
 WORKDIR /app/rust-engine
-RUN cargo build
+COPY rust-engine/ ./
+RUN cargo build --release
 
-# === Copy User-Facing Components ===
+
+# ==========================
+# 📁 Copy Shared Resources
+# ==========================
 WORKDIR /app
-COPY engines /app/engines
-COPY scripts /app/scripts
-COPY plugins /app/plugins
+COPY engines/ ./engines
+COPY scripts/ ./scripts
+COPY plugins/ ./plugins
 
-# === Start Electron App ===
+
+# ==========================
+# 🚀 Start Electron GUI
+# ==========================
+WORKDIR /app/electron-app
 CMD ["npx", "electron", "."]
