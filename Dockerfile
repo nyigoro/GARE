@@ -39,8 +39,8 @@ RUN npm install
 # Copy Electron app source files
 COPY electron-app/ ./electron-app/
 
-# Install Electron app dependencies
-RUN cd electron-app && npm install
+# Install Electron app dependencies and build
+RUN cd electron-app && npm install && npm run build
 
 # Copy other source files
 COPY rust-engine/ ./rust-engine/
@@ -54,5 +54,5 @@ RUN cd rust-engine && cargo build --release
 # Expose port for potential HTTP server
 EXPOSE 3000
 
-# Start Xvfb and Electron in development mode
+# Start Xvfb and Electron
 CMD ["sh", "-c", "Xvfb :99 -screen 0 1024x768x24 & cd electron-app && npm start"]
