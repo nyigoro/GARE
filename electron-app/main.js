@@ -8,7 +8,7 @@ dotenv.config();
 let rustProcess;
 
 // Load plugins
-const pluginDir = path.join(__dirname, 'plugins');
+const pluginDir = path.join(__dirname, '../plugins');
 let plugins = [];
 
 if (fs.existsSync(pluginDir)) {
@@ -64,8 +64,7 @@ function createWindow() {
 
       rustProcess.stderr.on('data', (chunk) => {
         const lines = chunk.toString().split('\n').filter(Boolean);
-        lines.for “‘`
-Each line => {
+        lines.forEach(line => {
           plugins.forEach(p => p?.onLog?.(`[ERR] ${line}`));
           win.webContents.send('log', `[ERR] ${line}`);
         });
