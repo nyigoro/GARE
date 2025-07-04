@@ -30,7 +30,7 @@ COPY electron-app/package.json electron-app/vite.config.js ./electron-app/
 COPY electron-app/src ./electron-app/src
 COPY electron-app/preload.js electron-app/main.js ./electron-app/
 
-WORKDIR /app/electron-app
+WORKDIR /app/electron-app/electron-app/package.json electron-app
 RUN npm install && npm run build
 
 # === Build Rust Runner ===
