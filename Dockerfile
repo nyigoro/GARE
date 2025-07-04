@@ -32,10 +32,14 @@ RUN npm install -g npm@11.4.2
 # Set working directory
 WORKDIR /app
 
+# Copy root package.json and install dependencies
+COPY package.json ./
+RUN npm install
+
 # Copy Electron app source files
 COPY electron-app/ ./electron-app/
 
-# Install Node.js dependencies
+# Install Electron app dependencies
 RUN cd electron-app && npm install
 
 # Copy other source files
