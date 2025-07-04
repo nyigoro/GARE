@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
   gare:
     build: .
@@ -9,11 +8,22 @@ services:
       - ./engines:/app/engines
       - ./plugins:/app/plugins
     environment:
-      - DISPLAY=${DISPLAY}
+      - DISPLAY=${DISPLAY:-:99}
       - PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
+      - RUNNER_MODE=docker
     ports:
-      - "3000:3000"  # (Optional) if GUI serves anything over HTTP
-    network_mode: host  # Needed for GUI apps to access your X server (Linux)
+      - "3000:3000"
+    network_mode: host
     stdin_open: true
     tty: true
     privileged: true
+    depends_on:
+      - prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+volumes:
+  prometheus-data:
