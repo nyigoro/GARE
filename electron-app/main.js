@@ -6,9 +6,11 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 let rustProcess;
+let win;
 
 console.log('[Main] Starting Electron app');
 
+// Load plugins
 const pluginDir = path.join(__dirname, '../plugins');
 let plugins = [];
 
@@ -30,18 +32,16 @@ if (fs.existsSync(pluginDir)) {
 
 function createWindow() {
   const preloadPath = path.join(__dirname, 'preload.js');
-  console.log('[Main] Preload path:', preloadPath);
+  const indexPath = path.join(__dirname, 'dist/index.html');
+
   if (!fs.existsSync(preloadPath)) {
     console.error('[Main] preload.js not found at:', preloadPath);
   }
-
-  const indexPath = path.join(__dirname, 'dist/index.html');
-  console.log('[Main] Index path:', indexPath);
   if (!fs.existsSync(indexPath)) {
     console.error('[Main] dist/index.html not found at:', indexPath);
   }
 
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
@@ -52,59 +52,62 @@ function createWindow() {
   });
 
   console.log('[Main] Loading dist/index.html');
-  win.loadFile('dist/index.html').catch(err => {
+  win.loadFile(indexPath).catch(err => {
     console.error('[Main] Failed to load index.html:', err);
   });
+}
 
-  ipcMain.on('run-command', (event, data) => {
-    console.log('[Main] Received run-command:', data);
-    const mode = process.env.RUNNER_MODE || 'native';
+// IPC handler (fixes runCommand invoke compatibility)
+ipcMain.handle('run-command', async (_event, data) => {
+  console.log('[Main] Received run-command:', data);
+  const mode = process.env.RUNNER_MODE || 'native';
 
-    if (!rustProcess) {
-      if (mode === 'docker') {
-        rustProcess = spawn('docker', [
-          'exec', '-i', 'gare-app',
-          './rust-engine/target/release/gare-runner',
-        ]);
-      } else {
-        rustProcess = spawn('./rust-engine/target/release/gare-runner', [], {
-          cwd: path.join(__dirname, '..'),
-        });
-      }
-
-      rustProcess.stdout.on('data', (chunk) => {
-        const lines = chunk.toString().split('\n').filter(Boolean);
-        lines.forEach(line => {
-          plugins.forEach(p => p?.onLog?.(line));
-          win.webContents.send('log', line);
-          console.log('[Main] stdout:', line);
-        });
-      });
-
-      rustProcess.stderr.on('data', (chunk) => {
-        const lines = chunk.toString().split('\n').filter(Boolean);
-        lines.forEach(line => {
-          plugins.forEach(p => p?.onLog?.(`[ERR] ${line}`));
-          win.webContents.send('log', `[ERR] ${line}`);
-          console.error('[Main] stderr:', line);
-        });
-      });
-
-      rustProcess.on('exit', () => {
-        plugins.forEach(p => p?.onExit?.());
-        win.webContents.send('log', '[GARE] Runner exited');
-        console.log('[Main] Rust process exited');
-        rustProcess = null;
+  if (!rustProcess) {
+    if (mode === 'docker') {
+      rustProcess = spawn('docker', [
+        'exec', '-i', 'gare-app',
+        './rust-engine/target/release/gare-runner',
+      ]);
+    } else {
+      rustProcess = spawn('./rust-engine/target/release/gare-runner', [], {
+        cwd: path.join(__dirname, '..'),
       });
     }
 
-    rustProcess.stdin.write(JSON.stringify(data) + '\n');
-  });
-}
+    rustProcess.stdout.on('data', (chunk) => {
+      const lines = chunk.toString().split('\n').filter(Boolean);
+      lines.forEach(line => {
+        plugins.forEach(p => p?.onLog?.(line));
+        win.webContents.send('log', line);
+        console.log('[Main] stdout:', line);
+      });
+    });
+
+    rustProcess.stderr.on('data', (chunk) => {
+      const lines = chunk.toString().split('\n').filter(Boolean);
+      lines.forEach(line => {
+        plugins.forEach(p => p?.onLog?.(`[ERR] ${line}`));
+        win.webContents.send('log', `[ERR] ${line}`);
+        console.error('[Main] stderr:', line);
+      });
+    });
+
+    rustProcess.on('exit', () => {
+      plugins.forEach(p => p?.onExit?.());
+      win.webContents.send('log', '[GARE] Runner exited');
+      console.log('[Main] Rust process exited');
+      rustProcess = null;
+    });
+  }
+
+  rustProcess.stdin.write(JSON.stringify(data) + '\n');
+  return 'sent';
+});
 
 app.whenReady().then(() => {
   console.log('[Main] App ready');
   createWindow();
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
