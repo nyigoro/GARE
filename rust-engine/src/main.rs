@@ -55,7 +55,7 @@ async fn run_engine(req: RunRequest) {
        .stdout(Stdio::piped())
        .stderr(Stdio::piped());
 
-    println!("Launching: {} {:?}", command_path, args);
+  println!("Launching: {} {:?}", command_path.display(), args);
 
     let mut child = match cmd.spawn() {
         Ok(c) => c,
