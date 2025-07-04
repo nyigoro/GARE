@@ -1,8 +1,10 @@
 use std::fs;
 use std::env;
+use std::io::{BufRead, BufReader, Stdin};
 use std::process::Stdio;
 use serde::Deserialize;
-use tokio::{io::{AsyncBufReadExt, BufReader}, process::Command};
+use tokio::process::Command;
+use which::which;
 
 #[derive(Deserialize)]
 struct RunRequest {
@@ -26,7 +28,7 @@ async fn main() {
     }
 
     let stdin = std::io::stdin();
-    let mut reader = std::io::BufReader::new(stdin);
+    let mut reader = BufReader::new(stdin);
     let mut input = String::new();
 
     while reader.read_line(&mut input).unwrap_or(0) > 0 {
@@ -42,16 +44,17 @@ async fn run_engine(req: RunRequest) {
     let config_str = fs::read_to_string(&config_path).expect("Engine config missing");
     let engine: EngineConfig = serde_json::from_str(&config_str).expect("Invalid engine config");
 
+    let command_path = which(&engine.command).expect("Command not found");
     let args: Vec<String> = engine.args.iter()
         .map(|arg| arg.replace("${url}", &req.url))
         .collect();
 
-    let mut cmd = Command::new(&engine.command);
+    let mut cmd = Command::new(&command_path);
     cmd.args(&args)
        .stdout(Stdio::piped())
        .stderr(Stdio::piped());
 
-    println!("Launching: {} {:?}", engine.command, args);
+    println!("Launching: {} {:?}", command_path, args);
 
     let mut child = match cmd.spawn() {
         Ok(c) => c,
@@ -62,7 +65,7 @@ async fn run_engine(req: RunRequest) {
     };
 
     if let Some(stdout) = child.stdout.take() {
-        let reader = BufReader::new(stdout).lines();
+        let reader = tokio::io::BufReader::new(stdout).lines();
         tokio::pin!(reader);
         while let Ok(Some(line)) = reader.next_line().await {
             println!("{}", line);
@@ -70,7 +73,7 @@ async fn run_engine(req: RunRequest) {
     }
 
     if let Some(stderr) = child.stderr.take() {
-        let reader = BufReader::new(stderr).lines();
+        let reader = tokio::io::BufReader::new(stderr).lines();
         tokio::pin!(reader);
         while let Ok(Some(line)) = reader.next_line().await {
             eprintln!("{}", line);
