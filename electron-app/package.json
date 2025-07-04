@@ -12,7 +12,8 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "xterm": "^5.2.1",
-    "dotenv": "^16.0.0"
+    "dotenv": "^16.0.0",
+    "puppeteer": "^24.11.2"
   },
   "devDependencies": {
     "electron": "^37.2.0",
