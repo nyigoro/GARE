@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Terminal } from 'xterm';
 import 'xterm/css/xterm.css';
-import 'tailwindcss';
+import '../index.css'; // Correct Tailwind import
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('containers');
@@ -17,7 +17,7 @@ export default function App() {
       });
       xtermRef.current.open(terminalRef.current);
       if (window.electronAPI && window.electronAPI.onLog) {
-        console.log('[App] Registering electronAPI.onLog'); // Debug log
+        console.log('[App] Registering electronAPI.onLog');
         window.electronAPI.onLog((message) => {
           xtermRef.current.writeln(message);
         });
