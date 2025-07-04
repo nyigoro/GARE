@@ -29,15 +29,13 @@ RUN apt-get update && \
 # Set working directory
 WORKDIR /app
 
-# Copy package files for Electron app
-COPY electron-app/package*.json ./electron-app/
-COPY electron-app/vite.config.js ./electron-app/
+# Copy Electron app source files
+COPY electron-app/ ./electron-app/
 
 # Install Node.js dependencies
 RUN cd electron-app && npm install
 
-# Copy all source files
-COPY electron-app/ ./electron-app/
+# Copy other source files
 COPY rust-engine/ ./rust-engine/
 COPY engines/ ./engines/
 COPY scripts/ ./scripts/
@@ -49,5 +47,5 @@ RUN cd rust-engine && cargo build --release
 # Expose port for potential HTTP server
 EXPOSE 3000
 
-# Start Xvfb and Electron
-CMD ["sh", "-c", "Xvfb :99 -screen 0 1024x768x24 & cd electron-app && npx electron ."]
+# Start Xvfb and Electron in development mode
+CMD ["sh", "-c", "Xvfb :99 -screen 0 1024x768x24 & cd electron-app && npm start"]
