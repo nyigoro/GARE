@@ -1,5 +1,5 @@
 # Base image: Node.js for Electron + Puppeteer
-FROM node:20-slim AS base
+FROM node:22-slim AS base
 
 # Avoid Puppeteer auto-downloading Chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
