@@ -33,8 +33,8 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false
-    }
+      nodeIntegration: false,
+    },
   });
 
   win.loadFile('dist/index.html');
@@ -46,13 +46,14 @@ function createWindow() {
       if (mode === 'docker') {
         rustProcess = spawn('docker', [
           'exec', '-i', 'gare-app',
-          './rust-engine/target/debug/gare-runner'
+          './rust-engine/target/release/gare-runner',
         ]);
       } else {
-        rustProcess = spawn('./rust-engine/target/debug/gare-runner');
+        rustProcess = spawn('./rust-engine/target/release/gare-runner', [], {
+          cwd: path.join(__dirname, '..'),
+        });
       }
 
-      // Standard output
       rustProcess.stdout.on('data', (chunk) => {
         const lines = chunk.toString().split('\n').filter(Boolean);
         lines.forEach(line => {
@@ -61,10 +62,10 @@ function createWindow() {
         });
       });
 
-      // Standard error
       rustProcess.stderr.on('data', (chunk) => {
         const lines = chunk.toString().split('\n').filter(Boolean);
-        lines.forEach(line => {
+        lines.for “‘`
+Each line => {
           plugins.forEach(p => p?.onLog?.(`[ERR] ${line}`));
           win.webContents.send('log', `[ERR] ${line}`);
         });
