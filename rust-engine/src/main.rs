@@ -24,6 +24,7 @@ async fn main() {
     let args: Vec<String> = env::args().collect();
     if args.contains(&"--version".to_string()) {
         println!("GARE Runner v0.1.0");
+        }
         return;
     }
     
