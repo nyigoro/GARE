@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Terminal } from 'xterm';
-import 'xterm/css/xterm.css';
-import '../index.css'; // This is where your base Tailwind CSS or other global styles should be imported from.
+// Changed import from 'xterm' to '@xterm/xterm'
+import { Terminal } from '@xterm/xterm';
+// Changed CSS import from 'xterm/css/xterm.css' to '@xterm/xterm/css/xterm.css'
+import '@xterm/xterm/css/xterm.css';
+import '../index.css';
 
 // Define the structure of the electronAPI for TypeScript/JSDoc type checking
 /**
