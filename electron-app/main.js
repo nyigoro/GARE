@@ -11,6 +11,7 @@ let win;
 console.log('[Main] Electron app starting...');
 
 // Load plugins
+// This path should be relative to the main.js location in both dev and packaged modes
 const pluginDir = path.join(__dirname, '../plugins');
 let plugins = [];
 
@@ -37,15 +38,35 @@ function createWindow() {
   // Determine the correct paths for preload.js and index.html
   // depending on whether the app is running in development or packaged mode.
   if (app.isPackaged) {
-    // In a packaged app, files are typically in resources/app.asar or resources/app
-    // Your vite.config.js copies preload.js to dist/preload.js,
-    // and dist/ is usually bundled into app.asar or app/
-    // So, preload.js will be directly in the root of the bundled app.
-    preloadPath = path.join(process.resourcesPath, 'app.asar', 'preload.js');
-    // For index.html, it's also inside the bundled app.asar
-    indexPath = path.join(process.resourcesPath, 'app.asar', 'dist', 'index.html');
+    // In a packaged app, files are typically within the 'resources' directory.
+    // Electron-builder usually puts the app's contents into 'app.asar' or 'app' folder.
 
-    console.log('[Main] Running in packaged mode.');
+    // Try to resolve path assuming 'app.asar' first
+    const appAsarPath = path.join(process.resourcesPath, 'app.asar');
+    const appDirPath = path.join(process.resourcesPath, 'app'); // Fallback if asar is disabled
+
+    if (fs.existsSync(appAsarPath)) {
+      // If app.asar exists, files are inside it.
+      // Your vite.config.js copies preload.js to dist/preload.js,
+      // and the entire dist/ is bundled into app.asar.
+      // So, preload.js will be at the root of the bundled app.asar.
+      preloadPath = path.join(appAsarPath, 'preload.js');
+      indexPath = path.join(appAsarPath, 'dist', 'index.html');
+      console.log('[Main] Running in packaged mode (app.asar detected).');
+    } else if (fs.existsSync(appDirPath)) {
+      // If app.asar is not used (e.g., asar: false in electron-builder config),
+      // files might be directly in the 'app' directory.
+      preloadPath = path.join(appDirPath, 'preload.js');
+      indexPath = path.join(appDirPath, 'dist', 'index.html');
+      console.log('[Main] Running in packaged mode (app/ directory detected).');
+    } else {
+      // Fallback for unexpected packaged structure
+      console.error('[Main] ERROR: Could not determine packaged app structure (neither app.asar nor app/ found).');
+      // Default to assuming it's directly in resourcesPath as a last resort, though unlikely for preload.js
+      preloadPath = path.join(process.resourcesPath, 'preload.js');
+      indexPath = path.join(process.resourcesPath, 'dist', 'index.html');
+    }
+
     console.log(`[Main] Packaged preloadPath: ${preloadPath}`);
     console.log(`[Main] Packaged indexPath: ${indexPath}`);
 
@@ -61,16 +82,16 @@ function createWindow() {
 
   // Verify preload.js existence
   if (!fs.existsSync(preloadPath)) {
-    console.error(`[Main] ERROR: preload.js NOT FOUND at path: ${preloadPath}`);
-    // Consider showing a user-friendly error or exiting here
+    console.error(`[Main] CRITICAL ERROR: preload.js NOT FOUND at path: ${preloadPath}`);
+    // Consider showing a user-friendly error or exiting the app here
   } else {
     console.log(`[Main] preload.js found at: ${preloadPath}`);
   }
 
   // Verify index.html existence
   if (!fs.existsSync(indexPath)) {
-    console.error(`[Main] ERROR: index.html NOT FOUND at path: ${indexPath}`);
-    // Consider showing a user-friendly error or exiting here
+    console.error(`[Main] CRITICAL ERROR: index.html NOT FOUND at path: ${indexPath}`);
+    // Consider showing a user-friendly error or exiting the app here
   } else {
     console.log(`[Main] index.html found at: ${indexPath}`);
   }
