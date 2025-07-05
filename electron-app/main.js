@@ -31,22 +31,46 @@ if (fs.existsSync(pluginDir)) {
 }
 
 function createWindow() {
-  // CORRECTED: Point to the preload script within the 'dist' directory
-  const preloadPath = path.join(__dirname, 'dist/preload.js');
-  const indexPath = path.join(__dirname, 'dist/index.html');
+  let preloadPath;
+  let indexPath;
 
-  console.log(`[Main] Attempting to load preload script from: ${preloadPath}`);
+  // Determine the correct paths for preload.js and index.html
+  // depending on whether the app is running in development or packaged mode.
+  if (app.isPackaged) {
+    // In a packaged app, files are typically in resources/app.asar or resources/app
+    // Your vite.config.js copies preload.js to dist/preload.js,
+    // and dist/ is usually bundled into app.asar or app/
+    // So, preload.js will be directly in the root of the bundled app.
+    preloadPath = path.join(process.resourcesPath, 'app.asar', 'preload.js');
+    // For index.html, it's also inside the bundled app.asar
+    indexPath = path.join(process.resourcesPath, 'app.asar', 'dist', 'index.html');
+
+    console.log('[Main] Running in packaged mode.');
+    console.log(`[Main] Packaged preloadPath: ${preloadPath}`);
+    console.log(`[Main] Packaged indexPath: ${indexPath}`);
+
+  } else {
+    // In development mode, files are relative to __dirname (electron-app directory)
+    preloadPath = path.join(__dirname, 'preload.js');
+    indexPath = path.join(__dirname, 'dist', 'index.html'); // Assuming Vite builds to dist/
+
+    console.log('[Main] Running in development mode.');
+    console.log(`[Main] Dev preloadPath: ${preloadPath}`);
+    console.log(`[Main] Dev indexPath: ${indexPath}`);
+  }
+
+  // Verify preload.js existence
   if (!fs.existsSync(preloadPath)) {
-    console.error(`[Main] ERROR: preload.js NOT FOUND at expected path: ${preloadPath}`);
-    // You might want to show an error message to the user or exit gracefully here
+    console.error(`[Main] ERROR: preload.js NOT FOUND at path: ${preloadPath}`);
+    // Consider showing a user-friendly error or exiting here
   } else {
     console.log(`[Main] preload.js found at: ${preloadPath}`);
   }
 
-  console.log(`[Main] Attempting to load index.html from: ${indexPath}`);
+  // Verify index.html existence
   if (!fs.existsSync(indexPath)) {
-    console.error(`[Main] ERROR: index.html NOT FOUND at expected path: ${indexPath}`);
-    // You might want to show an error message to the user or exit gracefully here
+    console.error(`[Main] ERROR: index.html NOT FOUND at path: ${indexPath}`);
+    // Consider showing a user-friendly error or exiting here
   } else {
     console.log(`[Main] index.html found at: ${indexPath}`);
   }
@@ -58,7 +82,6 @@ function createWindow() {
       preload: preloadPath,
       contextIsolation: true, // Essential for security and contextBridge
       nodeIntegration: false, // Essential for security
-      // enableRemoteModule: false // Deprecated, ensure it's false or removed
     },
   });
 
@@ -66,8 +89,10 @@ function createWindow() {
   win.loadFile(indexPath)
     .then(() => {
       console.log('[Main] Renderer process HTML loaded successfully.');
-      // Optional: Open DevTools automatically for debugging
-      // win.webContents.openDevTools();
+      // Optional: Open DevTools automatically for debugging in development
+      // if (!app.isPackaged) {
+      //   win.webContents.openDevTools();
+      // }
     })
     .catch(err => {
       console.error('[Main] ERROR: Failed to load index.html:', err);
