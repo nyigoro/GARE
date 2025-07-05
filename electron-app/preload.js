@@ -1,7 +1,11 @@
+const { contextBridge, ipcRenderer } = require('electron');
+
+console.log('[Preload] Loading electronAPI'); // Debug log
+
 contextBridge.exposeInMainWorld('electronAPI', {
   runCommand: (data) => {
     console.log('[Preload] runCommand called:', data);
-    ipcRenderer.send('run-command', data); // 🔄 Changed from invoke to send
+    return ipcRenderer.invoke('run-command', data);
   },
   onLog: (callback) => {
     console.log('[Preload] Registering onLog listener');
