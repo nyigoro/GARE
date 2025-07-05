@@ -31,9 +31,9 @@ if (fs.existsSync(pluginDir)) {
 }
 
 function createWindow() {
-  // Ensure paths are correctly resolved from the main.js location
-  const preloadPath = path.join(__dirname, 'preload.js');
-  const indexPath = path.join(__dirname, 'dist/index.html'); // Assuming index.html is in dist/
+  // CORRECTED: Point to the preload script within the 'dist' directory
+  const preloadPath = path.join(__dirname, 'dist/preload.js');
+  const indexPath = path.join(__dirname, 'dist/index.html');
 
   console.log(`[Main] Attempting to load preload script from: ${preloadPath}`);
   if (!fs.existsSync(preloadPath)) {
