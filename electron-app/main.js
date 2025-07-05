@@ -57,28 +57,24 @@ function createWindow() {
   });
 }
 
-// IPC handler (fixes runCommand invoke compatibility)
+// IPC handler using invoke-compatible method
 ipcMain.handle('run-command', async (_event, data) => {
   console.log('[Main] Received run-command:', data);
   const mode = process.env.RUNNER_MODE || 'native';
 
   if (!rustProcess) {
+    const rustCmd = './rust-engine/target/release/gare-runner';
     if (mode === 'docker') {
-      rustProcess = spawn('docker', [
-        'exec', '-i', 'gare-app',
-        './rust-engine/target/release/gare-runner',
-      ]);
+      rustProcess = spawn('docker', ['exec', '-i', 'gare-app', rustCmd]);
     } else {
-      rustProcess = spawn('./rust-engine/target/release/gare-runner', [], {
-        cwd: path.join(__dirname, '..'),
-      });
+      rustProcess = spawn(rustCmd, [], { cwd: path.join(__dirname, '..') });
     }
 
     rustProcess.stdout.on('data', (chunk) => {
       const lines = chunk.toString().split('\n').filter(Boolean);
       lines.forEach(line => {
         plugins.forEach(p => p?.onLog?.(line));
-        win.webContents.send('log', line);
+        win?.webContents.send('log', line);
         console.log('[Main] stdout:', line);
       });
     });
@@ -87,14 +83,14 @@ ipcMain.handle('run-command', async (_event, data) => {
       const lines = chunk.toString().split('\n').filter(Boolean);
       lines.forEach(line => {
         plugins.forEach(p => p?.onLog?.(`[ERR] ${line}`));
-        win.webContents.send('log', `[ERR] ${line}`);
+        win?.webContents.send('log', `[ERR] ${line}`);
         console.error('[Main] stderr:', line);
       });
     });
 
     rustProcess.on('exit', () => {
       plugins.forEach(p => p?.onExit?.());
-      win.webContents.send('log', '[GARE] Runner exited');
+      win?.webContents.send('log', '[GARE] Runner exited');
       console.log('[Main] Rust process exited');
       rustProcess = null;
     });
