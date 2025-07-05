@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Terminal } from 'xterm';
 import 'xterm/css/xterm.css';
-import '../index.css'; // Correct Tailwind import
+import '../index.css';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('containers');
