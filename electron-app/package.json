@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "vite",
+    "build": "node_modules/.bin/vite build",
     "build": "vite build",
     "postinstall": "npm run build",
     "start": "electron .",
