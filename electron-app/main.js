@@ -34,12 +34,26 @@ function createWindow() {
   const preloadPath = path.join(__dirname, 'preload.js');
   const indexPath = path.join(__dirname, 'dist/index.html');
 
+  // --- START: Added Debugging Logs ---
+  console.log(`[Main] Calculated preloadPath: ${preloadPath}`);
   if (!fs.existsSync(preloadPath)) {
-    console.error('[Main] preload.js not found at:', preloadPath);
+    console.error('[Main] ERROR: preload.js not found at:', preloadPath);
+  } else {
+    console.log('[Main] preload.js found. Attempting to read its content (for debug):');
+    try {
+      const preloadContent = fs.readFileSync(preloadPath, 'utf8');
+      // console.log(preloadContent.substring(0, 200) + '...'); // Log first 200 chars
+      console.log('[Main] preload.js content read successfully.');
+    } catch (readErr) {
+      console.error('[Main] ERROR: Could not read preload.js content:', readErr);
+    }
   }
+
+  console.log(`[Main] Calculated indexPath: ${indexPath}`);
   if (!fs.existsSync(indexPath)) {
-    console.error('[Main] dist/index.html not found at:', indexPath);
+    console.error('[Main] ERROR: dist/index.html not found at:', indexPath);
   }
+  // --- END: Added Debugging Logs ---
 
   win = new BrowserWindow({
     width: 1200,
@@ -55,6 +69,9 @@ function createWindow() {
   win.loadFile(indexPath).catch(err => {
     console.error('[Main] Failed to load index.html:', err);
   });
+
+  // Open DevTools automatically if in development
+  // win.webContents.openDevTools();
 }
 
 // IPC handler using invoke-compatible method
@@ -64,11 +81,19 @@ ipcMain.handle('run-command', async (_event, data) => {
 
   if (!rustProcess) {
     const rustCmd = './rust-engine/target/release/gare-runner';
+    let spawnArgs = [];
+    let spawnOptions = { cwd: path.join(__dirname, '..') };
+
     if (mode === 'docker') {
-      rustProcess = spawn('docker', ['exec', '-i', 'gare-app', rustCmd]);
+      spawnArgs = ['exec', '-i', 'gare-app', rustCmd];
+      spawnOptions = {}; // Docker exec handles the path within the container
+      console.log('[Main] Spawning Docker command:', 'docker', spawnArgs);
     } else {
-      rustProcess = spawn(rustCmd, [], { cwd: path.join(__dirname, '..') });
+      spawnArgs = [rustCmd];
+      console.log('[Main] Spawning native command:', rustCmd, 'with cwd:', spawnOptions.cwd);
     }
+
+    rustProcess = spawn(mode === 'docker' ? 'docker' : rustCmd, spawnArgs, spawnOptions);
 
     rustProcess.stdout.on('data', (chunk) => {
       const lines = chunk.toString().split('\n').filter(Boolean);
@@ -88,16 +113,32 @@ ipcMain.handle('run-command', async (_event, data) => {
       });
     });
 
-    rustProcess.on('exit', () => {
+    rustProcess.on('exit', (code) => {
       plugins.forEach(p => p?.onExit?.());
-      win?.webContents.send('log', '[GARE] Runner exited');
-      console.log('[Main] Rust process exited');
+      const exitMessage = `[GARE] Runner exited with code ${code}`;
+      win?.webContents.send('log', exitMessage);
+      console.log('[Main] Rust process exited:', exitMessage);
       rustProcess = null;
+    });
+
+    rustProcess.on('error', (err) => {
+      const errorMessage = `[Main] Failed to start rust process: ${err.message}`;
+      console.error(errorMessage);
+      win?.webContents.send('log', errorMessage);
+      rustProcess = null; // Ensure process is null if it failed to start
     });
   }
 
-  rustProcess.stdin.write(JSON.stringify(data) + '\n');
-  return 'sent';
+  // Ensure process is ready before writing
+  if (rustProcess && rustProcess.stdin.writable) {
+    rustProcess.stdin.write(JSON.stringify(data) + '\n');
+    return 'sent';
+  } else {
+    const errorMsg = '[Main] Rust process not ready or stdin not writable.';
+    console.error(errorMsg);
+    win?.webContents.send('log', `[ERR] ${errorMsg}`);
+    return 'failed to send';
+  }
 });
 
 app.whenReady().then(() => {
