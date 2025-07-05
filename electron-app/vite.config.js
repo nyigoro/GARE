@@ -4,21 +4,21 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import fs from 'fs';
 
-const copyPreload = () => {
+function copyPreload() {
   const src = path.resolve(__dirname, 'preload.js');
-  const dest = path.resolve(__dirname, '../dist/preload.js');
+  const dest = path.resolve(__dirname, 'dist/preload.js');
 
   try {
     if (fs.existsSync(src)) {
       fs.copyFileSync(src, dest);
-      console.log('[Vite] ✅ Copied preload.js to dist/');
+      console.log('[Vite] ✅ preload.js copied to dist/');
     } else {
-      console.warn('[Vite] ⚠️ preload.js not found — skipping copy.');
+      console.warn('[Vite] ⚠️ preload.js not found in electron-app/');
     }
   } catch (err) {
-    console.error('[Vite] ❌ Error copying preload.js:', err);
+    console.error('[Vite] ❌ Failed to copy preload.js:', err);
   }
-};
+}
 
 export default defineConfig({
   plugins: [react()],
@@ -27,16 +27,7 @@ export default defineConfig({
   build: {
     outDir: '../dist',
     emptyOutDir: true,
-    rollupOptions: {
-      output: {
-        assetFileNames: 'assets/[name]-[hash][extname]',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        entryFileNames: 'assets/[name]-[hash].js',
-      },
-    },
   },
-  // Hook into the build process
-  closeBundle() {
-    copyPreload();
-  },
+  // Hook to copy preload.js after build
+  closeBundle: copyPreload,
 });
